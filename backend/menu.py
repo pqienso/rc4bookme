@@ -22,7 +22,8 @@ def displayMenu():
         "isLoggedIn", False
     ) and st.session_state.get("isRegisteredUser", False)
     if isAuthenticated:
-        st.sidebar.header(f"Welcome, {st.session_state["userInfo"]["name"]}")
+        name = st.session_state["userInfo"]["name"]
+        st.sidebar.header(f"Welcome, {name}")
         st.sidebar.page_link("pages/submitBookings.py", label="Submit bookings")
         st.sidebar.page_link("pages/viewYourBookings.py", label="View your bookings")
     else:

@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 from streamlit_calendar import calendar
 from datetime import timedelta
@@ -56,9 +57,13 @@ if len(friendList) != 0:
 
 
 if st.button("Submit", type="primary"):
+    st.session_state["submitted"] = False
+
     try:
         startTs, endTs = backend.getBookingTs(startDate, endDate, startTime, endTime)
         with st.spinner("Processing booking..."):
+            st.image("resources/loading.gif")
+            time.sleep(3)
             backend.tryInsertBooking(
                 startTs,
                 endTs,
@@ -67,6 +72,11 @@ if st.button("Submit", type="primary"):
                 st.session_state["userInfo"]["name"],
                 friendIds=friendList,
             )
-        st.info("Booking submitted!")
+        st.session_state["submitted"] = True
+        st.rerun()
+
     except ValueError as e:
         st.warning(str(e))
+
+if st.session_state.get("submitted"):
+    st.info("Booking submitted!")
