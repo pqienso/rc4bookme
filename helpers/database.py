@@ -10,136 +10,136 @@ scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive",
 ]
-serviceAccount = gspread.service_account_from_dict(
-    st.secrets["serviceAccount"], scopes=scope
+service_account = gspread.service_account_from_dict(
+    st.secrets["service_account"], scopes=scope
 )
-spreadsheet = serviceAccount.open("RC4MEDB")
+spreadsheet = service_account.open("RC4MEDB")
 
 
-def refreshUsers():
+def refresh_users():
     st.session_state["db"]["users"] = pd.DataFrame(
         spreadsheet.worksheet("Users").get_all_records()
     ).set_index("email")
 
 
-def refreshBookings():
-    bookingsDf = pd.DataFrame(spreadsheet.worksheet("Bookings").get_all_records())
-    bookingsDf = bookingsDf.set_index("booking_uid", drop=True)
-    if len(bookingsDf) != 0:
-        bookingsDf["friend_ids"] = bookingsDf["friend_ids"].apply(json.loads).apply(set)
-    st.session_state["db"]["bookings"] = bookingsDf
+def refresh_bookings():
+    bookings_df = pd.DataFrame(spreadsheet.worksheet("Bookings").get_all_records())
+    bookings_df = bookings_df.set_index("booking_uid", drop=True)
+    if len(bookings_df) != 0:
+        bookings_df["friend_ids"] = bookings_df["friend_ids"].apply(json.loads).apply(set)
+    st.session_state["db"]["bookings"] = bookings_df
 
 
-def isRegisteredUser(email: str) -> bool:
-    refreshUsers()
-    isRegisteredUser = email in st.session_state["db"]["users"].index.values
-    return isRegisteredUser
+def is_registered_user(email: str) -> bool:
+    refresh_users()
+    is_registered_user = email in st.session_state["db"]["users"].index.values
+    return is_registered_user
 
 
-def getUserDetails(email: str) -> Dict[str, str]:
-    refreshUsers()
+def get_user_details(email: str) -> Dict[str, str]:
+    refresh_users()
     return dict(
         st.session_state["db"]["users"][
             ["tele_handle", "student_id", "name", "phone_number", "user_type"]
         ]
         .rename(
             columns={
-                "tele_handle": "teleHandle",
-                "student_id": "studentId",
+                "tele_handle": "tele_handle",
+                "student_id": "student_id",
                 "user_type": "userType",
-                "phone_number": "phoneNumber",
+                "phone_number": "phone_number",
             }
         )
         .loc[email]
     )
 
 
-def isAlreadyRegistered(studentId: str, teleHandle: str, phoneNumber: str) -> bool:
-    refreshUsers()
-    studentId = studentId.upper()
-    teleHandle = teleHandle.strip("@")
-    phoneNumber = phoneNumber.replace(" ", "")
-    isAlreadyRegistered = (
-        studentId in st.session_state["db"]["users"]["student_id"].values
-        or teleHandle in st.session_state["db"]["users"]["tele_handle"].values
-        or phoneNumber in st.session_state["db"]["users"]["phone_number"].values
+def is_already_registered(student_id: str, tele_handle: str, phone_number: str) -> bool:
+    refresh_users()
+    student_id = student_id.upper()
+    tele_handle = tele_handle.strip("@")
+    phone_number = phone_number.replace(" ", "")
+    is_already_registered = (
+        student_id in st.session_state["db"]["users"]["student_id"].values
+        or tele_handle in st.session_state["db"]["users"]["tele_handle"].values
+        or phone_number in st.session_state["db"]["users"]["phone_number"].values
     )
-    return isAlreadyRegistered
+    return is_already_registered
 
 
-def registerStudent(
-    studentId: str,
-    teleHandle: str,
-    phoneNumber: str,
+def register_student(
+    student_id: str,
+    tele_handle: str,
+    phone_number: str,
     email: str,
     name: str,
-    roomNumber: str,
-    gradYear: int,
+    room_number: str,
+    grad_year: int,
 ) -> None:
     sheet = spreadsheet.worksheet("Users")
     row = [
         email,
         name.title(),
-        studentId.upper(),
-        teleHandle.strip("@"),
-        phoneNumber.replace(" ", ""),
-        roomNumber,
-        gradYear,
+        student_id.upper(),
+        tele_handle.strip("@"),
+        phone_number.replace(" ", ""),
+        room_number,
+        grad_year,
         "user",
     ]
     sheet.append_row(row)
 
 
-def timeSlotIsTaken(startTime: datetime, endTime: datetime) -> bool:
-    refreshBookings()
+def time_slot_is_taken(start_time: datetime, end_time: datetime) -> bool:
+    refresh_bookings()
     if len(st.session_state["db"]["bookings"]) == 0:
         return False
-    startTime = startTime.timestamp() * 1000
-    endTime = endTime.timestamp() * 1000
-    timeSlotIsTaken = (
+    start_time = start_time.timestamp() * 1000
+    end_time = end_time.timestamp() * 1000
+    time_slot_is_taken = (
         len(
             st.session_state["db"]["bookings"].query(
-                f"start_unix_ms < {endTime} & end_unix_ms > {startTime} & (status == 'A' | status == 'a')",
+                f"start_unix_ms < {end_time} & end_unix_ms > {start_time} & (status == 'A' | status == 'a')",
             )
         )
         > 0
     )
-    return timeSlotIsTaken
+    return time_slot_is_taken
 
 
-def addBooking(
+def add_booking(
     name: str,
-    startTs: datetime,
-    endTs: datetime,
-    studentId: str,
-    teleHandle: str,
-    phoneNumber: str,
-    bookingDescription: str,
-    friendIds: List[str],
+    start_ts: datetime,
+    end_ts: datetime,
+    student_id: str,
+    tele_handle: str,
+    phone_number: str,
+    booking_description: str,
+    friend_ids: List[str],
 ):
     sheet = spreadsheet.worksheet("Bookings")
     row = [
         name,
         datetime.now().isoformat(),
         "P",
-        startTs.date().isoformat(),
-        startTs.time().isoformat(),
-        endTs.date().isoformat(),
-        endTs.time().isoformat(),
-        studentId,
-        teleHandle,
-        str(phoneNumber),
-        bookingDescription,
-        json.dumps(friendIds),
-        startTs.timestamp() * 1000,
-        endTs.timestamp() * 1000,
+        start_ts.date().isoformat(),
+        start_ts.time().isoformat(),
+        end_ts.date().isoformat(),
+        end_ts.time().isoformat(),
+        student_id,
+        tele_handle,
+        str(phone_number),
+        booking_description,
+        json.dumps(friend_ids),
+        start_ts.timestamp() * 1000,
+        end_ts.timestamp() * 1000,
         str(uuid4()),
     ]
     sheet.append_row(row)
 
 
-def getPendingAndApprovedBookings() -> pd.DataFrame:
-    refreshBookings()
+def get_pending_and_approved_bookings() -> pd.DataFrame:
+    refresh_bookings()
     if len(st.session_state["db"]["bookings"]) == 0:
         return pd.DataFrame(
             columns=[
@@ -167,15 +167,15 @@ def getPendingAndApprovedBookings() -> pd.DataFrame:
     ].query("(status == 'P' | status == 'A')")
 
 
-def getBookingsForUser(studentId: str) -> pd.DataFrame:
-    refreshBookings()
-    bookingsDf: pd.DataFrame = st.session_state["db"]["bookings"]
-    isRelevantToUser = bookingsDf.apply(
-        lambda row: row["student_id"] == studentId
-        or (studentId in row["friend_ids"] and row["status"] == "A"),
+def get_bookings_for_user(student_id: str) -> pd.DataFrame:
+    refresh_bookings()
+    bookings_df: pd.DataFrame = st.session_state["db"]["bookings"]
+    is_relevant_to_user = bookings_df.apply(
+        lambda row: row["student_id"] == student_id
+        or (student_id in row["friend_ids"] and row["status"] == "A"),
         axis=1,
     )
-    if isRelevantToUser.sum() == 0:
+    if is_relevant_to_user.sum() == 0:
         return pd.DataFrame(
             columns=[
                 "name",
@@ -186,7 +186,7 @@ def getBookingsForUser(studentId: str) -> pd.DataFrame:
                 "booking_description",
             ]
         )
-    return bookingsDf[isRelevantToUser][
+    return bookings_df[is_relevant_to_user][
         [
             "name",
             "student_id",
@@ -198,25 +198,25 @@ def getBookingsForUser(studentId: str) -> pd.DataFrame:
     ]
 
 
-def writeToDb(newDf: pd.DataFrame, worksheetName: str):
+def write_to_db(new_df: pd.DataFrame, worksheet_name: str):
     """
     Overwrites the entire sheet! Use with caution.
     """
-    bookingsWorksheet = spreadsheet.worksheet(worksheetName)
-    bookingsWorksheet.update([newDf.columns.values.tolist()] + newDf.values.tolist())
+    bookings_worksheet = spreadsheet.worksheet(worksheet_name)
+    bookings_worksheet.update([new_df.columns.values.tolist()] + new_df.values.tolist())
 
 
-def getBookingByUid(uuid: str) -> pd.Series:
-    bookingsDf: pd.DataFrame = st.session_state["db"]["bookings"]
-    booking = bookingsDf.loc[uuid,]
+def get_booking_by_uid(uuid: str) -> pd.Series:
+    bookings_df: pd.DataFrame = st.session_state["db"]["bookings"]
+    booking = bookings_df.loc[uuid,]
     return booking
 
 
-def editBookingTiming(uuid: str, newStart: datetime, newEnd: datetime):
-    refreshBookings()
-    bookingsDf: pd.DataFrame = st.session_state["db"]["bookings"].copy()
+def edit_booking_timing(uuid: str, new_start: datetime, new_end: datetime):
+    refresh_bookings()
+    bookings_df: pd.DataFrame = st.session_state["db"]["bookings"].copy()
     try:
-        bookingsDf.loc[
+        bookings_df.loc[
             uuid,
             [
                 "booking_start_date",
@@ -227,52 +227,52 @@ def editBookingTiming(uuid: str, newStart: datetime, newEnd: datetime):
                 "end_unix_ms",
             ],
         ] = (
-            newStart.date().isoformat(),
-            newStart.time().isoformat(),
-            newEnd.date().isoformat(),
-            newEnd.time().isoformat(),
-            newStart.timestamp() * 1000,
-            newEnd.timestamp() * 1000,
+            new_start.date().isoformat(),
+            new_start.time().isoformat(),
+            new_end.date().isoformat(),
+            new_end.time().isoformat(),
+            new_start.timestamp() * 1000,
+            new_end.timestamp() * 1000,
         )
-        bookingsDf["friend_ids"] = (
-            bookingsDf["friend_ids"].apply(list).apply(json.dumps)
+        bookings_df["friend_ids"] = (
+            bookings_df["friend_ids"].apply(list).apply(json.dumps)
         )
-        bookingsDf["booking_uid"] = bookingsDf.index
-        bookingsDf = bookingsDf.reset_index(drop=True)
-        writeToDb(bookingsDf, "Bookings")
+        bookings_df["booking_uid"] = bookings_df.index
+        bookings_df = bookings_df.reset_index(drop=True)
+        write_to_db(bookings_df, "Bookings")
     except KeyError:
         raise KeyError("Booking not found. Please refresh your calendar")
 
 
-def deleteBooking(uuid: str):
-    refreshBookings()
-    bookingsDf: pd.DataFrame = st.session_state["db"]["bookings"].copy()
+def delete_booking(uuid: str):
+    refresh_bookings()
+    bookings_df: pd.DataFrame = st.session_state["db"]["bookings"].copy()
     try:
-        bookingsDf = bookingsDf.drop(index=uuid)
-        bookingsDf["friend_ids"] = (
-            bookingsDf["friend_ids"].apply(list).apply(json.dumps)
+        bookings_df = bookings_df.drop(index=uuid)
+        bookings_df["friend_ids"] = (
+            bookings_df["friend_ids"].apply(list).apply(json.dumps)
         )
-        bookingsDf["booking_uid"] = bookingsDf.index
-        bookingsDf = bookingsDf.reset_index(drop=True)
-        dummyRow = pd.DataFrame(
-            [["" for column in bookingsDf.columns]], columns=bookingsDf.columns
+        bookings_df["booking_uid"] = bookings_df.index
+        bookings_df = bookings_df.reset_index(drop=True)
+        dummy_row = pd.DataFrame(
+            [["" for column in bookings_df.columns]], columns=bookings_df.columns
         )
-        bookingsDf = pd.concat([bookingsDf, dummyRow])
-        writeToDb(bookingsDf, "Bookings")
+        bookings_df = pd.concat([bookings_df, dummy_row])
+        write_to_db(bookings_df, "Bookings")
     except KeyError:
         raise KeyError("Booking not found. Please refresh your calendar")
 
 
-def editBookingStatus(uuid: str, status: str):
-    refreshBookings()
-    bookingsDf: pd.DataFrame = st.session_state["db"]["bookings"].copy()
+def edit_booking_status(uuid: str, status: str):
+    refresh_bookings()
+    bookings_df: pd.DataFrame = st.session_state["db"]["bookings"].copy()
     try:
-        bookingsDf.loc[uuid, "status"] = status
-        bookingsDf["friend_ids"] = (
-            bookingsDf["friend_ids"].apply(list).apply(json.dumps)
+        bookings_df.loc[uuid, "status"] = status
+        bookings_df["friend_ids"] = (
+            bookings_df["friend_ids"].apply(list).apply(json.dumps)
         )
-        bookingsDf["booking_uid"] = bookingsDf.index
-        bookingsDf = bookingsDf.reset_index(drop=True)
-        writeToDb(bookingsDf, "Bookings")
+        bookings_df["booking_uid"] = bookings_df.index
+        bookings_df = bookings_df.reset_index(drop=True)
+        write_to_db(bookings_df, "Bookings")
     except KeyError:
         raise KeyError("Booking not found. Please refresh your calendar")

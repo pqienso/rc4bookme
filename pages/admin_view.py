@@ -4,39 +4,39 @@ from streamlit_calendar import calendar
 from datetime import datetime
 
 st.set_page_config(
-    "RC4ME - Admin View", layout="wide", page_icon="resources/rc4meLogo.png"
+    "RC4ME - Admin View", layout="wide", page_icon="resources/rc4me_logo.png"
 )
 
 from helpers import menu, database
-import helpers.adminView as helpers
+import helpers.admin_view as helpers
 
-menu.redirectIfNotAdmin()
-menu.displayMenu()
+menu.redirect_if_not_admin()
+menu.display_menu()
 
 
 st.title("Admin view - all bookings")
 if (
     st.button("Refresh calendar")
-    or st.session_state["calendar"]["adminBookingsCache"] is None
-    or st.session_state["atPage"] != "adminView"
+    or st.session_state["calendar"]["admin_bookings_cache"] is None
+    or st.session_state["at_page"] != "admin_view"
 ):
-    st.session_state["atPage"] = "adminView"
+    st.session_state["at_page"] = "admin_view"
     st.session_state["notification"] = None
     with st.spinner("Getting bookings..."):
-        helpers.updateAdminBookingsCache()
+        helpers.update_admin_bookings_cache()
 
 if st.session_state["notification"] is not None:
     st.info(st.session_state["notification"])
 
-calendarOptions = helpers.getCalendarOptions()
-calendarEvent: Dict = calendar(
-    st.session_state["calendar"]["adminBookingsCache"], options=calendarOptions
+calendar_options = helpers.get_calendar_options()
+calendar_event: Dict = calendar(
+    st.session_state["calendar"]["admin_bookings_cache"], options=calendar_options
 )
 
-if calendarEvent.get("callback", "") == "eventClick":
-    event = calendarEvent["eventClick"]["event"]
-    bookingUid = event["extendedProps"]["uuid"]
-    booking = database.getBookingByUid(bookingUid)
+if calendar_event.get("callback", "") == "eventClick":
+    event = calendar_event["eventClick"]["event"]
+    booking_uid = event["extendedProps"]["uuid"]
+    booking = database.get_booking_by_uid(booking_uid)
     booking["start"] = (
         booking["booking_start_date"] + " " + booking["booking_start_time"]
     )
@@ -69,8 +69,8 @@ if calendarEvent.get("callback", "") == "eventClick":
                 "Mark as approved", type="primary", disabled=booking["status"] == "A"
             ):
                 with st.spinner("Approving booking..."):
-                    database.editBookingStatus(bookingUid, "A")
-                    helpers.updateAdminBookingsCache()
+                    database.edit_booking_status(booking_uid, "A")
+                    helpers.update_admin_bookings_cache()
                 st.session_state["notification"] = (
                     f"Booking by {booking['name']} on {start.strftime('%c')} approved!"
                 )
@@ -78,8 +78,8 @@ if calendarEvent.get("callback", "") == "eventClick":
         with col2:
             if st.button("Mark as pending", disabled=booking["status"] == "P"):
                 with st.spinner("Marking booking as pending..."):
-                    database.editBookingStatus(bookingUid, "P")
-                    helpers.updateAdminBookingsCache()
+                    database.edit_booking_status(booking_uid, "P")
+                    helpers.update_admin_bookings_cache()
                 st.session_state["notification"] = (
                     f"Booking by {booking['name']} on {start.strftime('%c')} marked as pending."
                 )
@@ -87,8 +87,8 @@ if calendarEvent.get("callback", "") == "eventClick":
         with col3:
             if st.button("Mark as rejected", disabled=booking["status"] == "R"):
                 with st.spinner("Rejecting booking..."):
-                    database.editBookingStatus(bookingUid, "R")
-                    helpers.updateAdminBookingsCache()
+                    database.edit_booking_status(booking_uid, "R")
+                    helpers.update_admin_bookings_cache()
                 st.session_state["notification"] = (
                     f"Booking by {booking['name']} on {start.strftime('%c')} rejected."
                 )
@@ -96,8 +96,8 @@ if calendarEvent.get("callback", "") == "eventClick":
         with col4:
             if st.button("Delete booking"):
                 with st.spinner("Deleting booking..."):
-                    database.deleteBooking(bookingUid)
-                    helpers.updateAdminBookingsCache()
+                    database.delete_booking(booking_uid)
+                    helpers.update_admin_bookings_cache()
                 st.session_state["notification"] = (
                     f"Booking by {booking['name']} on {start.strftime('%c')} deleted."
                 )

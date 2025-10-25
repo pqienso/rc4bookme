@@ -4,38 +4,38 @@ from utils import states
 
 
 @st.cache_data()
-def getRoomNumbers() -> List[str]:
-    roomNumbers = [
-        f"#{level:02}-{suiteNumber}{suiteUnit}"
+def get_room_numbers() -> List[str]:
+    room_numbers = [
+        f"#{level:02}-{suite_number}{suite_unit}"
         for level in range(3, 18)
-        for suiteNumber in ["01", "11", "12"]
-        for suiteUnit in ["A", "B", "C", "D", "E", "F"]
+        for suite_number in ["01", "11", "12"]
+        for suite_unit in ["A", "B", "C", "D", "E", "F"]
     ]
-    roomNumbers += [
+    room_numbers += [
         f"#{level:02}-{unit:02}" for level in range(3, 18) for unit in range(2, 11)
     ]
-    roomNumbers += [
+    room_numbers += [
         f"#{level:02}-{unit:02}" for level in range(3, 18) for unit in range(13, 28)
     ]
-    return sorted(roomNumbers)
+    return sorted(room_numbers)
 
 
-def initialiseSessionStates():
-    states.setState("bookingForm", {"friendIds": []})
-    states.setState(
+def initialise_session_states():
+    states.set_state("booking_form", {"friend_ids": []})
+    states.set_state(
         "db",
         {"bookings": None, "users": None},
     )
-    states.setState("atPage", "main")
-    states.setState(
+    states.set_state("at_page", "main")
+    states.set_state(
         "calendar",
         {
-            "allBookingsCache": None,
-            "userBookingsCache": None,
-            "adminBookingsCache": None,
+            "all_bookings_cache": None,
+            "user_bookings_cache": None,
+            "admin_bookings_cache": None,
         },
     )
-    states.setState("notification", None)
-    states.setState("userInfo", {})
-    states.setState("isLoggedIn", False)
-    states.setState("isRegisteredUser", None)
+    states.set_state("notification", None)
+    states.set_state("user_info", {})
+    states.set_state("is_logged_in", False)
+    states.set_state("is_registered_user", None)

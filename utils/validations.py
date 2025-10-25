@@ -3,19 +3,19 @@ import pytz
 import streamlit as st
 
 
-def isValidStudentId(studentId: str | None) -> bool:
-    if studentId is None or studentId == "":
+def is_valid_student_id(student_id: str | None) -> bool:
+    if student_id is None or student_id == "":
         return False
-    if studentId[0].lower() != "e":
+    if student_id[0].lower() != "e":
         return False
-    if len(studentId) != 8:
+    if len(student_id) != 8:
         return False
-    if not studentId[1:].isnumeric():
+    if not student_id[1:].isnumeric():
         return False
     return True
 
 
-def isValidPhoneNumber(number: str | None) -> bool:
+def is_valid_phone_number(number: str | None) -> bool:
     if number is None:
         return False
     if len(number) < 8:
@@ -26,13 +26,13 @@ def isValidPhoneNumber(number: str | None) -> bool:
     return True
 
 
-def verifyBookingPeriod(start: datetime, end: datetime):
+def verify_booking_period(start: datetime, end: datetime):
     now = datetime.now(tz=pytz.timezone("Singapore"))
     if start > end:
         raise ValueError("End time cannot be earlier than start time")
     if end - start < timedelta(hours=1):
         raise ValueError("Booking must be at least an hour long")
-    if st.session_state["userInfo"]["userType"] != "admin":
+    if st.session_state["user_info"]["userType"] != "admin":
         if start - now < timedelta(days=1):
             raise ValueError("Please book at least 1 day in advance")
         if start - now > timedelta(weeks=2):
